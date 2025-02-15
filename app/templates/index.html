@@ -85,6 +85,8 @@
     <div class="loading" id="loading">Loading...</div>
 
     <script>
+        let history = [];
+
         async function sendMessage() {
             const userInput = document.getElementById('user-input').value;
             if (userInput.trim() === "") return; // Prevent sending empty messages
@@ -97,7 +99,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ user_input: userInput }),
+                body: JSON.stringify({ user_input: userInput, history: history }),
             });
             const data = await response.json();
 
@@ -110,6 +112,10 @@
 
             // Scroll to the bottom of the chat box
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Update the history
+            history.push({ role: "user", content: userInput });
+            history.push({ role: "assistant", content: data.response });
 
             loadingIndicator.style.display = 'none'; // Hide loading indicator
         }
@@ -130,5 +136,4 @@
             alert('Vector database repopulated');
         }
     </script>
-</body>
-</html>
+</body

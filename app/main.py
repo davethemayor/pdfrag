@@ -3,7 +3,6 @@ import openai
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import os
-import time
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
@@ -81,12 +80,10 @@ vector_db = Chroma(
     persist_directory="./chroma_db_nccn", embedding_function=embedding_function
 )
 
-history = [
-    {
-        "role": "system",
-        "content": 'You are an assistant for question-answering tasks. Use the pieces of retrieved context to answer the questions. Cite sources with hyperlinks to the documents. Append the page number to the URL in the format: "#page=n" If you cannot find the answer in the context, just say "I don\'t have that information"',
-    },
-]
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": 'You are an assistant for question-answering tasks. Use the pieces of retrieved context to answer the questions. Cite sources with hyperlinks to the documents. Append the page number to the hyperlink URL in the format: "/pdfs/doc.pdf#page=n" and use the filename + page number as the display text. If you cannot find the answer in the context, just say "I don\'t have that information"',
+}
 
 
 @app.route("/")
@@ -97,6 +94,7 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     user_input = request.json["user_input"]
+    user_history = request.json.get("history", [])
 
     # Perform similarity search using vector_db
     search_results = vector_db.similarity_search(user_input, k=3)
@@ -106,7 +104,7 @@ def chat():
     context_user_input = "Query: " + user_input + "\n\n\nContext: " + some_context
 
     new_message = {"role": "user", "content": context_user_input}
-    history.append(new_message)
+    history = [SYSTEM_PROMPT] + user_history + [new_message]
 
     completion = openai.chat.completions.create(
         model="gpt-4o-mini",
@@ -116,9 +114,10 @@ def chat():
     )
 
     response = completion.choices[0].message.content
-    history.append({"role": "assistant", "content": response})
+    user_history.append({"role": "user", "content": user_input})
+    user_history.append({"role": "assistant", "content": response})
 
-    return jsonify({"response": response, "history": history})
+    return jsonify({"response": response, "history": user_history})
 
 
 @app.route("/pdfs/<path:filename>")
