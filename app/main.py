@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 import openai
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -7,6 +7,10 @@ import time
 from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
+
+app = Flask(__name__)
 
 # Define the directory and metadata file paths
 pdf_dir = "./pdfs"
@@ -69,9 +73,6 @@ if pdf_files:
 else:
     print("No new or modified PDF files to process")
 
-app = Flask(__name__)
-
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
 embedding_function = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -83,7 +84,7 @@ vector_db = Chroma(
 history = [
     {
         "role": "system",
-        "content": 'You are an assistant for question-answering tasks. Use the pieces of retrieved context to answer the questions. If you cannot find the answer in the context, just say "I don\'t have that information"',
+        "content": 'You are an assistant for question-answering tasks. Use the pieces of retrieved context to answer the questions. Cite sources with hyperlinks to the documents. Append the page number to the URL in the format: "#page=n" If you cannot find the answer in the context, just say "I don\'t have that information"',
     },
 ]
 
@@ -118,6 +119,11 @@ def chat():
     history.append({"role": "assistant", "content": response})
 
     return jsonify({"response": response, "history": history})
+
+
+@app.route("/pdfs/<path:filename>")
+def serve_pdf(filename):
+    return send_from_directory(pdf_dir, filename)
 
 
 if __name__ == "__main__":
