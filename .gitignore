@@ -1,0 +1,4 @@
+.env
+.htpasswd
+app/chroma_db_nccn
+app/pdfs/*
