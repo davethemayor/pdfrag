@@ -12,7 +12,7 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 app = Flask(__name__)
 
 # Define the directory and metadata file paths
-pdf_dir = "./pdfs"
+pdf_dir = "/pdfs"
 metadata_file = "./chroma_db_nccn/last_update.txt"
 
 # Load the last update time
@@ -30,14 +30,12 @@ pdf_files = [
     and datetime.fromtimestamp(os.path.getmtime(os.path.join(pdf_dir, f)))
     > last_update_time
 ]
-print(
-    f"Found {len(pdf_files)} new or modified PDF files in '{pdf_dir}'"
-)  # Debugging output
+print(f"Found {len(pdf_files)} new or modified PDF files in '{pdf_dir}'")
 
 if pdf_files:
     # Load new or modified PDFs
     loaders = [PyPDFLoader(os.path.join(pdf_dir, file)) for file in pdf_files]
-    print("PDF loaders created")  # Debugging output
+    print("PDF loaders created")
 
     docs = []
     for loader in loaders:
@@ -48,26 +46,22 @@ if pdf_files:
     # Split text into chunks
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     docs = text_splitter.split_documents(docs)
-    print(f"Split documents into {len(docs)} chunks")  # Debugging output
+    print(f"Split documents into {len(docs)} chunks")
 
-    # Define embedding function
     embedding_function = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={"device": "cpu"},
     )
-    print("Embedding function defined")  # Debugging output
 
     # Create a vector store or add documents to an existing one
     vectorstore = Chroma.from_documents(
         docs, embedding_function, persist_directory="./chroma_db_nccn"
     )
-    print("Vector store updated with new or modified documents")  # Debugging output
 
     # Update the last update time
     with open(metadata_file, "w") as f:
         f.write(datetime.now().isoformat())
 
-    # Print the count of documents in the vector store
     print(f"Number of documents in the vector store: {vectorstore._collection.count()}")
 else:
     print("No new or modified PDF files to process")
@@ -118,11 +112,6 @@ def chat():
     user_history.append({"role": "assistant", "content": response})
 
     return jsonify({"response": response, "history": user_history})
-
-
-@app.route("/pdfs/<path:filename>")
-def serve_pdf(filename):
-    return send_from_directory(pdf_dir, filename)
 
 
 if __name__ == "__main__":
