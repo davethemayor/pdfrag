@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="chat-box hidden" id="chat-box"></div>
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type your question here" />
+        <button class="send-button" onclick="sendMessage()">&#10148;</button> <!-- Unicode for arrow -->
+    </div>
+    <div class="loading" id="loading">Loading...</div>
+    <script src="/client.js"></script>
+</body>
+</html>
