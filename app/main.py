@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import openai
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -14,6 +14,7 @@ app = Flask(__name__)
 # Define the directory and metadata file paths
 pdf_dir = "/pdfs"
 metadata_file = "./chroma_db_nccn/last_update.txt"
+log_file = "chat.log"
 
 # Load the last update time
 if os.path.exists(metadata_file):
@@ -80,6 +81,12 @@ SYSTEM_PROMPT = {
 }
 
 
+def log_interaction(user_input, response):
+    with open(log_file, "a") as f:
+        log_entry = f"{datetime.now().isoformat()} - User: {user_input}\nAssistant: {response}\n\n"
+        f.write(log_entry)
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -110,6 +117,8 @@ def chat():
     response = completion.choices[0].message.content
     user_history.append({"role": "user", "content": user_input})
     user_history.append({"role": "assistant", "content": response})
+
+    log_interaction(user_input, response)
 
     return jsonify({"response": response, "history": user_history})
 
